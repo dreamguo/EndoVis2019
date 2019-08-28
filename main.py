@@ -84,8 +84,16 @@ def train(model, train_loader, test_loader, naming, use_tf_log):
                    'test_phase': [], 'test_instrument': [], 'test_action': [],
                    'acc_phase': []}
 
+    # different learing rate
+    phase_params = list(map(id, model.phase_branch.parameters()))
+    base_params = filter(lambda p : id(p) not in phase_params, model.parameters())
+    params = [ 
+            {"params": phase_params, "lr": phase_learning_rate},
+            {"params": base_params, "lr": learning_rate}
+            ]
+
     # loss function and optimizer
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate,
+    optimizer = optim.Adam(params, lr=learning_rate,
                            weight_decay=weight_decay)
 
     optimizer.zero_grad()
