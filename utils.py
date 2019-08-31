@@ -23,9 +23,12 @@ def get_test_combination_cases(feature_name_list, feature_type, length):
     if (len(feature_type) < 5):
         cases_rgb, flips_nums = get_test_cases(rgb_list, 'rgb', length)
         cases_flow, flips_nums = get_test_cases(flow_list, 'flow', length)
-    else:
+    elif feature_type.endswith("oversample_4"):
         cases_rgb, flips_nums = get_test_cases(rgb_list, 'rgb_oversample_4', length)
         cases_flow, flips_nums = get_test_cases(flow_list, 'flow_oversample_4', length)
+    elif feature_type.endswith("oversample_4_norm"):
+        cases_rgb, flips_nums = get_test_cases(rgb_list, 'rgb_oversample_4_norm', length)
+        cases_flow, flips_nums = get_test_cases(flow_list, 'flow_oversample_4_norm', length)
     
     for i in range(len(cases_rgb)):
         for j in range(len(cases_rgb[i])):
@@ -48,7 +51,6 @@ def get_test_cases(feature_name_list, feature_type, length):
         print(feature_dir + '/' + name_item, ' for test')
         feature = feature_npz['feature'].tolist()
         idx = random.randint(0, len(feature) - 1)
-        #print(idx)
         feature = feature[idx]
         if (len(feature) < length):
             print('video length is ', len(feature))
@@ -77,9 +79,12 @@ def get_train_combination_case(feature_name_list, feature_type, length):
     if (len(feature_type) < 5):
         data_rgb, name, frame = get_train_case(rgb_list, 'rgb', length, rgb_list[idx])
         data_flow, name, frame = get_train_case(flow_list, 'flow', length, flow_list[idx], frame)
-    else:
+    elif (feature_type.endswith("oversample_4")):
         data_rgb, name, frame = get_train_case(rgb_list, 'rgb_oversample_4', length, rgb_list[idx])
         data_flow, name, frame = get_train_case(flow_list, 'flow_oversample_4', length, flow_list[idx], frame)
+    elif (feature_type.endswith("oversample_4_norm")):
+        data_rgb, name, frame = get_train_case(rgb_list, 'rgb_oversample_4_norm', length, rgb_list[idx])
+        data_flow, name, frame = get_train_case(flow_list, 'flow_oversample_4_norm', length, flow_list[idx], frame)
     #print(data_rgb.shape)
     #print(data_flow.shape)
     data = np.concatenate((data_rgb, data_flow), axis=1)
@@ -95,7 +100,8 @@ def get_train_case(feature_name_list, feature_type, length, name='', start_frame
     feature_npz = np.load(os.path.join(feature_dir, name))
     print(feature_dir + '/' + name, ' for train')
     feature = list(feature_npz['feature'])
-    feature = feature[0]
+    idx = random.randint(0, len(feature) - 1)
+    feature = feature[idx]
     if (len(feature) < length):
         print('video length is ', len(feature))
         print('video is shorter than ', length)

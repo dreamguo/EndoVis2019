@@ -88,13 +88,12 @@ def train(model, train_loader, test_loader, naming, use_tf_log):
     phase_params = list(map(id, model.phase_branch.parameters()))
     base_params = filter(lambda p : id(p) not in phase_params, model.parameters())
     params = [ 
-            {"params": phase_params, "lr": phase_learning_rate},
-            {"params": base_params, "lr": learning_rate}
+            {"params": base_params},
+            {"params": model.phase_branch.parameters(), "lr": phase_learning_rate},
             ]
 
     # loss function and optimizer
-    optimizer = optim.Adam(params, lr=learning_rate,
-                           weight_decay=weight_decay)
+    optimizer = optim.Adam(params, lr=learning_rate, weight_decay=weight_decay)
 
     optimizer.zero_grad()
 
