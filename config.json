@@ -5,6 +5,7 @@
   "i3d_time": 4,
   "combination" : "True",
   "feature_std_thrh" : 1e-1,
+  "frame_rate" : 10000,
 
   "training_params": {
     "TCN": {
