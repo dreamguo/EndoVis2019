@@ -21,14 +21,14 @@ def get_test_combination_cases(feature_name_list, feature_type, length):
         flow_list.append(tmp + '-flow.npz')
     
     if (len(feature_type) < 5):
-        cases_rgb, flips_nums = get_test_cases(rgb_list, 'rgb', length)
-        cases_flow, flips_nums = get_test_cases(flow_list, 'flow', length)
+        cases_rgb, flips_nums, frame_nums = get_test_cases(rgb_list, 'rgb', length)
+        cases_flow, flips_nums, frame_nums = get_test_cases(flow_list, 'flow', length)
     elif feature_type.endswith("oversample_4"):
-        cases_rgb, flips_nums = get_test_cases(rgb_list, 'rgb_oversample_4', length)
-        cases_flow, flips_nums = get_test_cases(flow_list, 'flow_oversample_4', length)
+        cases_rgb, flips_nums, frame_nums = get_test_cases(rgb_list, 'rgb_oversample_4', length)
+        cases_flow, flips_nums, frame_nums = get_test_cases(flow_list, 'flow_oversample_4', length)
     elif feature_type.endswith("oversample_4_norm"):
-        cases_rgb, flips_nums = get_test_cases(rgb_list, 'rgb_oversample_4_norm', length)
-        cases_flow, flips_nums = get_test_cases(flow_list, 'flow_oversample_4_norm', length)
+        cases_rgb, flips_nums, frame_nums = get_test_cases(rgb_list, 'rgb_oversample_4_norm', length)
+        cases_flow, flips_nums, frame_nums = get_test_cases(flow_list, 'flow_oversample_4_norm', length)
     
     for i in range(len(cases_rgb)):
         for j in range(len(cases_rgb[i])):
@@ -38,7 +38,7 @@ def get_test_combination_cases(feature_name_list, feature_type, length):
     #print(len(cases_rgb[0]))
     #print(len(cases_rgb[0][0]))
     #print(len(cases_rgb[0][0][0]))
-    return cases_rgb, flips_nums
+    return cases_rgb, flips_nums, frame_nums
 
 
 def get_test_cases(feature_name_list, feature_type, length):
@@ -46,6 +46,7 @@ def get_test_cases(feature_name_list, feature_type, length):
     feature_dir = os.path.join(feature_dir, feature_type)
     test_cases = []
     flips_nums = []
+    frame_nums = []
     for name_item in feature_name_list:
         feature_npz = np.load(os.path.join(feature_dir, name_item))
         print(feature_dir + '/' + name_item, ' for test')
@@ -59,11 +60,12 @@ def get_test_cases(feature_name_list, feature_type, length):
         else:
             flips_num = len(feature) // length
             flips_nums.append(flips_num)
+            frame_nums.append(len(feature))
         flips_feature = []
         for flips_id in range(flips_num):
             flips_feature.append(feature[flips_id * length : (flips_id + 1) * length])
         test_cases.append(flips_feature)
-    return test_cases, flips_nums
+    return test_cases, flips_nums, frame_nums
 
 
 def get_train_combination_case(feature_name_list, feature_type, length):
@@ -77,19 +79,19 @@ def get_train_combination_case(feature_name_list, feature_type, length):
     idx = random.randint(0, len(feature_name_list) - 1)
 
     if (len(feature_type) < 5):
-        data_rgb, name, frame = get_train_case(rgb_list, 'rgb', length, rgb_list[idx])
-        data_flow, name, frame = get_train_case(flow_list, 'flow', length, flow_list[idx], frame)
+        data_rgb, name, frame, frame_num = get_train_case(rgb_list, 'rgb', length, rgb_list[idx])
+        data_flow, name, frame, frame_num = get_train_case(flow_list, 'flow', length, flow_list[idx], frame)
     elif (feature_type.endswith("oversample_4")):
-        data_rgb, name, frame = get_train_case(rgb_list, 'rgb_oversample_4', length, rgb_list[idx])
-        data_flow, name, frame = get_train_case(flow_list, 'flow_oversample_4', length, flow_list[idx], frame)
+        data_rgb, name, frame, frame_num = get_train_case(rgb_list, 'rgb_oversample_4', length, rgb_list[idx])
+        data_flow, name, frame, frame_num = get_train_case(flow_list, 'flow_oversample_4', length, flow_list[idx], frame)
     elif (feature_type.endswith("oversample_4_norm")):
-        data_rgb, name, frame = get_train_case(rgb_list, 'rgb_oversample_4_norm', length, rgb_list[idx])
-        data_flow, name, frame = get_train_case(flow_list, 'flow_oversample_4_norm', length, flow_list[idx], frame)
+        data_rgb, name, frame, frame_num = get_train_case(rgb_list, 'rgb_oversample_4_norm', length, rgb_list[idx])
+        data_flow, name, frame, frame_num = get_train_case(flow_list, 'flow_oversample_4_norm', length, flow_list[idx], frame)
     #print(data_rgb.shape)
     #print(data_flow.shape)
     data = np.concatenate((data_rgb, data_flow), axis=1)
     #print(data.shape)
-    return data, name, frame
+    return data, name, frame, frame_num
 
 
 def get_train_case(feature_name_list, feature_type, length, name='', start_frame=-1):
@@ -100,6 +102,7 @@ def get_train_case(feature_name_list, feature_type, length, name='', start_frame
     feature_npz = np.load(os.path.join(feature_dir, name))
     print(feature_dir + '/' + name, ' for train')
     feature = list(feature_npz['feature'])
+    frame_num = len(feature)
     idx = random.randint(0, len(feature) - 1)
     feature = feature[idx]
     if (len(feature) < length):
@@ -111,19 +114,19 @@ def get_train_case(feature_name_list, feature_type, length, name='', start_frame
             start_frame = random.randint(0, len(feature) - length)
     data = feature[start_frame : (start_frame + length)]
     data = np.array(data)
-    return data, name, start_frame
+    return data, name, start_frame, frame_num
 
 
-def get_test_gt(feature_name, flips_num, length):
+def get_test_gt(feature_name, flips_num, length, frame_num):
     gts = []
     for i in range(flips_num):
         gt = {}
-        gt['gt_phase'], gt['gt_instrument'], gt['gt_action'], gt['gt_action_detailed'], gt['gt_calot_skill'], gt['gt_dissection_skill'] = get_train_gt(feature_name, i * length * i3d_time, length, times=i3d_time)
+        gt['gt_phase'], gt['gt_instrument'], gt['gt_action'], gt['gt_action_detailed'], gt['gt_calot_skill'], gt['gt_dissection_skill'] = get_train_gt(feature_name, i * length * i3d_time, length, frame_num, times=i3d_time)
         gts.append(gt)
     return gts
 
 
-def get_train_gt(feature_name, frame, length, times=i3d_time):
+def get_train_gt(feature_name, frame, length, frame_num, times=i3d_time):
     tmp = feature_name.split('-')
     name = '-'.join([tmp[0], tmp[1]]) + '_'
     # print("in get_train_gt: ", name)
@@ -137,6 +140,7 @@ def get_train_gt(feature_name, frame, length, times=i3d_time):
         tmp1 = np.loadtxt(gt_path, delimiter=",")
         tmp1 = np.array(tmp1)
         gt_data = tmp1[0:, 1:]
+        frame = frame * gt_data.shape[0] // frame_num
         gt_data = gt_data[frame : frame + (times * length), 0:]
         
         # without skill, must have the sentence below

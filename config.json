@@ -3,17 +3,17 @@
   "naming_prefix": "TCN-3_subnets_combination_4",
   "input_dim": 1729,
   "i3d_time": 4,
-  "combination" : "True",
+  "combination" : "False",
   "feature_std_thrh" : 1e-1,
-  "frame_rate" : 10000,
+  "frame_rate" : 4,
 
   "training_params": {
     "TCN": {
-      "max_step_num": 1001,
+      "max_step_num": 2001,
       "batch_size": 8,
 
       "learning_rate": 1e-4,
-      "phase_learning_rate": 1e-2,
+      "phase_learning_rate": 1e-1,
       "weight_decay": 0,
       "dropout_rate": 0.1,
 
