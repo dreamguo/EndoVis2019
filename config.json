@@ -3,7 +3,7 @@
   "naming_prefix": "TCN-3_subnets_combination_4",
   "input_dim": 1729,
   "i3d_time": 4,
-  "combination" : "False",
+  "combination" : "True",
   "feature_std_thrh" : 1e-1,
   "frame_rate" : 4,
 

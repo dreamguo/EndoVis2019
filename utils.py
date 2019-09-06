@@ -102,9 +102,9 @@ def get_train_case(feature_name_list, feature_type, length, name='', start_frame
     feature_npz = np.load(os.path.join(feature_dir, name))
     print(feature_dir + '/' + name, ' for train')
     feature = list(feature_npz['feature'])
-    frame_num = len(feature)
     idx = random.randint(0, len(feature) - 1)
     feature = feature[idx]
+    frame_num = len(feature)
     if (len(feature) < length):
         print('video length is ', len(feature))
         print('video is shorter than ', length)
@@ -121,27 +121,34 @@ def get_test_gt(feature_name, flips_num, length, frame_num):
     gts = []
     for i in range(flips_num):
         gt = {}
-        gt['gt_phase'], gt['gt_instrument'], gt['gt_action'], gt['gt_action_detailed'], gt['gt_calot_skill'], gt['gt_dissection_skill'] = get_train_gt(feature_name, i * length * i3d_time, length, frame_num, times=i3d_time)
+        gt['gt_phase'], gt['gt_instrument'], gt['gt_action'], gt['gt_action_detailed'], gt['gt_calot_skill'], gt['gt_dissection_skill'] = get_train_gt(feature_name, i * length, length, frame_num)
         gts.append(gt)
     return gts
 
 
-def get_train_gt(feature_name, frame, length, frame_num, times=i3d_time):
+def get_train_gt(feature_name, feature_frame, length, feature_frame_num):
+    gt_frame = feature_frame * i3d_time
+    gt_frame_num = feature_frame_num * i3d_time
+    flag = 1
+
     tmp = feature_name.split('-')
     name = '-'.join([tmp[0], tmp[1]]) + '_'
     # print("in get_train_gt: ", name)
     gt_dir = '../Annotations/'
     gt_paths = [os.path.join(gt_dir, i) for i in os.listdir(gt_dir) if (i.endswith('.csv') and i.startswith(name))]
-    # print(gt_paths)
     # ipdb.set_trace()
     for gt_path in gt_paths:
-        # print(gt_path)
-        # gt_data = pd.read_csv(gt_path)
         tmp1 = np.loadtxt(gt_path, delimiter=",")
         tmp1 = np.array(tmp1)
         gt_data = tmp1[0:, 1:]
-        frame = frame * gt_data.shape[0] // frame_num
-        gt_data = gt_data[frame : frame + (times * length), 0:]
+        if flag == 1:
+            flag = 0
+            print('gt_frame: ' + str(gt_frame))
+            print('gt_frame_num: ' + str(gt_frame_num))
+            print('gt_data.shape[0]: ' + str(gt_data.shape[0]))
+            gt_frame = gt_frame * gt_data.shape[0] // gt_frame_num
+            print('after gt_frame: ' + str(gt_frame))
+        gt_data = gt_data[gt_frame : gt_frame + (i3d_time * length), 0:]
         
         # without skill, must have the sentence below
         gt_calot_skill = []

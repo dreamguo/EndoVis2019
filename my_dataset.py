@@ -8,6 +8,7 @@ from utils import get_test_cases, get_train_case, get_test_gt, get_train_gt, get
 
 class TestDataset(Dataset):
     def __init__(self, feature_name, feature_type='rgb', length=512):
+        assert(combination in ['False', 'True'])
         self.feature_name = feature_name
         self.feature_type = feature_type
         self.length = length
@@ -15,6 +16,7 @@ class TestDataset(Dataset):
             self.test_cases, self.flips_nums, self.frame_nums = get_test_combination_cases(feature_name, feature_type, length)
         else:
             self.test_cases, self.flips_nums, self.frame_nums = get_test_cases(feature_name, feature_type, length)
+        print(self.frame_nums)
 
     # for test
     # for i in range(len(feature_name)):
@@ -54,12 +56,13 @@ class TrainDataset(Dataset):
             data, name, frame, frame_num = get_train_combination_case(self.feature_names, self.feature_type, self.length)
         else:
             data, name, frame, frame_num = get_train_case(self.feature_names, self.feature_type, self.length)
+        print(frame_num)
 
         return_dict = {}
         return_dict['idx'] = np.array(idx)
         return_dict['gt_phase'], return_dict['gt_instrument'], return_dict[
             'gt_action'], return_dict['gt_action_detailed'], return_dict['gt_calot_skill'], return_dict['gt_dissection_skill'] = get_train_gt(
-            name, frame * i3d_time, self.length, frame_num)
+            name, frame, self.length, frame_num)
         return_dict['data'] = np.array(data)
         return_dict['is_train_case'] = 1
         return_dict['start_frame'] = frame * i3d_time
