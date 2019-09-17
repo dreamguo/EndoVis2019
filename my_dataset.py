@@ -16,7 +16,6 @@ class TestDataset(Dataset):
             self.test_cases, self.flips_nums, self.frame_nums = get_test_combination_cases(feature_name, feature_type, length)
         else:
             self.test_cases, self.flips_nums, self.frame_nums = get_test_cases(feature_name, feature_type, length)
-        print(self.frame_nums)
 
     # for test
     # for i in range(len(feature_name)):
@@ -56,7 +55,6 @@ class TrainDataset(Dataset):
             data, name, frame, frame_num = get_train_combination_case(self.feature_names, self.feature_type, self.length)
         else:
             data, name, frame, frame_num = get_train_case(self.feature_names, self.feature_type, self.length)
-        print(frame_num)
 
         return_dict = {}
         return_dict['idx'] = np.array(idx)

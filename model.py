@@ -187,4 +187,67 @@ class TCNNet(nn.Module):
         action = self.action_branch(x)
         
         return phase, instrument, action
+
+
+####################### TCN_online #################################
+
+class TCNonlineNet(nn.Module):
+    def __init__(self, input_dim, dropout_rate):
+        super(TCNonlineNet, self).__init__()
+
+        self.base = EmbedModule(input_dim, 256, dropout_rate)
+
+        self.middle = nn.Sequential(
+            TCNDecoder(512, 1024)
+        )
+        
+        self.branch_size = 128
+
+        self.phase_branch = nn.Sequential(
+            nn.Linear(self.branch_size, 32),
+            nn.ReLU(),
+            nn.Linear(32, 7)
+        )
+
+        self.instrument_branch = nn.Sequential(
+            nn.Linear(self.branch_size, 64),
+            nn.ReLU(),
+            nn.Linear(64, 21)
+        )
+
+        self.action_branch = nn.Sequential(
+            nn.Linear(self.branch_size, 32),
+            nn.ReLU(),
+            nn.Linear(32, 4)
+        )
+
+    def forward(self, x):
+        frame_num = x.shape[1]
+        x = self.base(x)
+
+        padding = 4 - (x.shape[1] % 4)
+        padding = padding % 4
+        if padding != 0:
+            x = nn.functional.pad(x, (0, 0, 0, padding), mode='constant',
+                                      value=0)
+        assert (x.shape[1] % 4 == 0)
+
+        x = x.permute(0, 2, 1)
+        x = self.middle(x)
+        x = x.permute(0, 2, 1)
+
+        if padding != 0:
+            x = x[:, :-padding, :]    
+        
+        upsample_net = nn.UpsamplingBilinear2d([i3d_time * frame_num, self.branch_size])
+
+        x = x.unsqueeze(0)
+        x = upsample_net(x)
+        x = x.squeeze(0)
+        
+        phase = self.phase_branch(x)
+        instrument = self.instrument_branch(x)
+        action = self.action_branch(x)
+        
+        return phase, instrument, action
               

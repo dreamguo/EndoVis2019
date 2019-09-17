@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import subprocess
 from config import *
-#import ipdb
+import ipdb
 
 
 def get_test_combination_cases(feature_name_list, feature_type, length):
@@ -29,20 +29,23 @@ def get_test_combination_cases(feature_name_list, feature_type, length):
     elif feature_type.endswith("oversample_4_norm"):
         cases_rgb, flips_nums, frame_nums = get_test_cases(rgb_list, 'rgb_oversample_4_norm', length)
         cases_flow, flips_nums, frame_nums = get_test_cases(flow_list, 'flow_oversample_4_norm', length)
-    
     for i in range(len(cases_rgb)):
+        flips_nums[i] = flips_flows[i]
         for j in range(len(cases_rgb[i])):
-            for n in range(len(cases_rgb[i][j])):
-                cases_rgb[i][j][n] += cases_flow[i][j][n]
-    #print(len(cases_rgb))
-    #print(len(cases_rgb[0]))
-    #print(len(cases_rgb[0][0]))
-    #print(len(cases_rgb[0][0][0]))
+            for n in range(len(cases_flow[i][j])):
+                cases_rgb[i][j].append(cases_flow[i][j][n])
+    assert(len(cases_rgb) = len(cases_flows))
+    assert(len(cases_rgb[0]) = len(cases_flows[0]))
+    assert(len(cases_rgb[0][0]) > len(cases_flows[0][0]))
+    assert(len(cases_rgb[0][0]) == input_dim)
     return cases_rgb, flips_nums, frame_nums
 
 
 def get_test_cases(feature_name_list, feature_type, length):
-    feature_dir = '../i3d'
+    if new_data == 'True':
+        feature_dir = '../i3d_new'
+    else:
+        feature_dir = '../i3d'
     feature_dir = os.path.join(feature_dir, feature_type)
     test_cases = []
     flips_nums = []
@@ -97,7 +100,10 @@ def get_train_combination_case(feature_name_list, feature_type, length):
 def get_train_case(feature_name_list, feature_type, length, name='', start_frame=-1):
     if name == '':
         name = feature_name_list[random.randint(0, len(feature_name_list) - 1)]
-    feature_dir = '../i3d'
+    if new_data == 'True':
+        feature_dir = '../i3d_new'
+    else:
+        feature_dir = '../i3d'
     feature_dir = os.path.join(feature_dir, feature_type)
     feature_npz = np.load(os.path.join(feature_dir, name))
     print(feature_dir + '/' + name, ' for train')
@@ -134,46 +140,65 @@ def get_train_gt(feature_name, feature_frame, length, feature_frame_num):
     tmp = feature_name.split('-')
     name = '-'.join([tmp[0], tmp[1]]) + '_'
     # print("in get_train_gt: ", name)
-    gt_dir = '../Annotations/'
-    gt_paths = [os.path.join(gt_dir, i) for i in os.listdir(gt_dir) if (i.endswith('.csv') and i.startswith(name))]
-    # ipdb.set_trace()
+    if new_data == 'True':
+        gt_dir = '../New_Annotations/Action'
+        gt_paths_1 = [os.path.join(gt_dir, i) for i in os.listdir(gt_dir) if (i.endswith('.csv') and (i.startswith('Hei-C' + name[5:]) or i.startswith('hei-c' + name[5:])))]
+        gt_dir = '../New_Annotations/Phase'
+        gt_paths_2 = [os.path.join(gt_dir, i) for i in os.listdir(gt_dir) if (i.endswith('.csv') and (i.startswith('Hei-C' + name[5:]) or i.startswith('hei-c' + name[5:])))]
+        gt_dir = '../New_Annotations/Instrument'
+        gt_paths_3 = [os.path.join(gt_dir, i) for i in os.listdir(gt_dir) if (i.endswith('.csv') and (i.startswith('Hei-C' + name[5:]) or i.startswith('hei-c' + name[5:])))]
+        gt_dir = '../New_Annotations/Skill'
+        gt_paths_4 = [os.path.join(gt_dir, i) for i in os.listdir(gt_dir) if (i.endswith('.csv') and (i.startswith('Hei-C' + name[5:]) or i.startswith('hei-c' + name[5:])))]
+        gt_paths = gt_paths_1 + gt_paths_2 + gt_paths_3 #+ gt_paths_4
+    else:
+        gt_dir = '../Annotations/'
+        gt_paths = [os.path.join(gt_dir, i) for i in os.listdir(gt_dir) if (i.endswith('.csv') and (i.startswith('Hei-C' + name[5:]) or i.startswith('hei-c' + name[5:])))]
+    #ipdb.set_trace()
     for gt_path in gt_paths:
+        #print(gt_path)
         tmp1 = np.loadtxt(gt_path, delimiter=",")
         tmp1 = np.array(tmp1)
+        #print(tmp1.shape)
         gt_data = tmp1[0:, 1:]
         if flag == 1:
             flag = 0
-            print('gt_frame: ' + str(gt_frame))
-            print('gt_frame_num: ' + str(gt_frame_num))
-            print('gt_data.shape[0]: ' + str(gt_data.shape[0]))
-            gt_frame = gt_frame * gt_data.shape[0] // gt_frame_num
-            print('after gt_frame: ' + str(gt_frame))
-        gt_data = gt_data[gt_frame : gt_frame + (i3d_time * length), 0:]
-        
+            gt_time = round(gt_data.shape[0] / gt_frame_num)
+    
+        gt_data = gt_data[gt_frame * gt_time : (gt_frame + i3d_time * length) * gt_time, 0:]
+        if gt_time > 1: # if gt_frames is more than feature_frames
+            #print(gt_path)
+            #print('gt_time: ' + str(gt_time))
+            tmp_frame = 0
+            data = []
+            while tmp_frame < i3d_time * length * gt_time:
+                data.append(gt_data[tmp_frame, 0:])
+                tmp_frame += gt_time
+            gt_data = np.array(data)
+
         # without skill, must have the sentence below
         gt_calot_skill = []
         gt_dissection_skill = []
 
-        if (gt_path.endswith('Phase.csv')):
+        if (gt_path.endswith('hase.csv')):
             # print('phase ', end='')
             # print(gt_data.shape)
             gt_phase = gt_data
-        elif (gt_path.endswith('Instrument.csv')):
+        elif (gt_path.endswith('nstrument.csv')):
             # print('instrument ', end='')
             # print(gt_data.shape)
             gt_instrument = gt_data
-        elif (gt_path.endswith('Action.csv')):
+        elif (gt_path.endswith('ction.csv')):
             # print('action ', end='')
             # print(gt_data.shape)
             gt_action = gt_data
-        elif (gt_path.endswith('Action_Detailed.csv')):
+        elif (gt_path.endswith('etailed.csv')):
             # print('action_detailed ', end='')
             # print(gt_data.shape)
             gt_action_detailed = gt_data
-        elif (gt_path.endswith('calot_skill.csv')):
-            gt_calot_skill = gt_data
-        elif (gt_path.endswith('dissection_skill.csv')):
-            gt_dissection_skill = gt_data
+        #elif (gt_path.endswith('calot_skill.csv')):
+            #gt_calot_skill = gt_data
+        #elif (gt_path.endswith('dissection_skill.csv')):
+            #gt_dissection_skill = gt_data
     return gt_phase, gt_instrument, gt_action, gt_action_detailed, gt_calot_skill, gt_dissection_skill
 
 
@@ -210,6 +235,9 @@ def get_acc_phase(pred_phase, gt_phase):
             right += 1
         else:
             wrong += 1
+    #print('len_all: ' + str(len(pred_phase)))
+    #print('right' + str(right))
+    #print('wrong' + str(wrong))
     return right, wrong
 
 

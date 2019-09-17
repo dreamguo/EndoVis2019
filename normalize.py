@@ -5,20 +5,15 @@ import random
 import argparse
 import numpy as np
 
-def normalize_data(data):
-    global_mean = data.mean(1)
-    global_std = data.std(1)
-    
+def normalize_data(norm_v, global_mean, global_std): 
     #ipdb.set_trace()
-    norm_v = data[global_std > feature_std_thrh, :]
-    global_std = np.transpose(global_std)
-    global_mean = np.transpose(global_mean)
-    norm_v = np.transpose(norm_v)
-
-    norm_v = norm_v - global_mean[global_std > feature_std_thrh]
-    norm_v = norm_v / global_std[global_std > feature_std_thrh]
-    norm_v = np.transpose(norm_v)
-
+    #norm_v = data[global_std > feature_std_thrh, :]    # 不用删除特征了
+    #norm_v = norm_v - global_mean[global_std > feature_std_thrh]
+    #norm_v = norm_v / global_std[global_std > feature_std_thrh]
+    
+    norm_v = norm_v - global_mean
+    norm_v = norm_v / global_std
+    
     return norm_v
 
 
@@ -33,34 +28,40 @@ if __name__ == '__main__':
     output_dir = args.output_dir
     
     name_list = os.listdir(feature_dir)
-    video_len = []
-    data_tmp = []
+    data_short = []
     for name_item in name_list:
-        print(name_item)
         if not name_item.endswith('.npz'):
             name_list.remove(name_item)
             continue
+        print('Calculate mean and std: ' + name_item)
         feature_npz = np.load(os.path.join(feature_dir, name_item))
         feature = feature_npz['feature'].tolist()
-        i3d_types = len(feature)
-        video_len.append(len(feature[0]))
-        tmp = []
+        feature_short = []
         for i in range(0, len(feature)):
-            tmp.append(np.transpose(feature[i]))
-        data_tmp.append(np.concatenate(tmp, axis=1))
-    data = np.concatenate(data_tmp, axis=1)
-    data_new = normalize_data(data)
-    print(data.shape, end=' new: ')
-    print(data_new.shape)
-
+            feature_tmp = np.array(feature[i])[::4, :]
+            feature_short.append(np.transpose(feature_tmp))
+        data_short.append(np.concatenate(feature_short, axis=1))
+    data_short = np.concatenate(data_short, axis=1)
+    global_mean = data_short.mean(1)
+    global_std = data_short.std(1)
+    
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     length = 0
-    for i in range(len(video_len)):
-        tmp_list = []
-        for j in range(i3d_types):
-            tmp_list.append(np.transpose(data_new[:, length : length + video_len[i]]))
-            length += video_len[i]
-        np.savez(os.path.join(output_dir, name_list[i]), feature = np.array(tmp_list))
-
+    for name_item in name_list:
+        feature_npz = np.load(os.path.join(feature_dir, name_item))
+        feature = feature_npz['feature'].tolist()
+        data = []
+        for i in range(0, len(feature)):                            # 10 or 1 * frames * 1024
+            feature_tmp = np.array(feature[i])                      # frames * 1024
+            data_new = normalize_data(feature_tmp, global_mean, global_std)
+            data.append(data_new)
+        # 10 or 1 * frames * xxxx( <= 1024)
+        print('Replace data: {} from {} to {}'.format(name_item, np.array(feature).shape, np.array(data).shape))
+        
+        #assert(len(data[0]) * i3d_time == feature_npz['frame_cnt']) # i3d中,frame_cnt略大于i3d_time*len(data[0])
+        np.savez(os.path.join(output_dir, name_item), 
+                feature = np.array(data), 
+                frame_cnt = feature_npz['frame_cnt'], 
+                video_name = name_item)
 

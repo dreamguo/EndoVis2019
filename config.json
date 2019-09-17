@@ -1,11 +1,11 @@
 {
   "model_type": "TCN",
-  "naming_prefix": "TCN-3_subnets_combination_4",
-  "input_dim": 1729,
+  "naming_prefix": "TCN-newdata_combination_1",
+  "input_dim": 2048,
   "i3d_time": 4,
   "combination" : "True",
-  "feature_std_thrh" : 1e-1,
-  "frame_rate" : 4,
+  "feature_std_thrh" : 1e-8,
+  "new_data" : "True",
 
   "training_params": {
     "TCN": {
