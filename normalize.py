@@ -13,7 +13,6 @@ def normalize_data(norm_v, global_mean, global_std):
     
     norm_v = norm_v - global_mean
     norm_v = norm_v / global_std
-    
     return norm_v
 
 
@@ -45,6 +44,11 @@ if __name__ == '__main__':
     global_mean = data_short.mean(1)
     global_std = data_short.std(1)
     
+    np.savez(os.path.join(output_dir, 'global_info'),
+            global_mean = global_mean,
+            global_std = global_std,
+            )
+    #exit(1)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     length = 0
@@ -59,7 +63,7 @@ if __name__ == '__main__':
         # 10 or 1 * frames * xxxx( <= 1024)
         print('Replace data: {} from {} to {}'.format(name_item, np.array(feature).shape, np.array(data).shape))
         
-        #assert(len(data[0]) * i3d_time == feature_npz['frame_cnt']) # i3d中,frame_cnt略大于i3d_time*len(data[0])
+        #assert(len(data[0]) * i3d_time == feature_npz['frame_cnt']) # i3d中,frame_cnt略大于i3d_time * len(data[0])
         np.savez(os.path.join(output_dir, name_item), 
                 feature = np.array(data), 
                 frame_cnt = feature_npz['frame_cnt'], 
